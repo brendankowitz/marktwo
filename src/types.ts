@@ -14,7 +14,7 @@ export interface Paragraph {
     styleOverride?: EnhancementMode; // Override the default enhancement mode
 }
 
-export type ParagraphType = 'text' | 'heading' | 'list' | 'code' | 'quote' | 'empty';
+export type ParagraphType = 'text' | 'heading' | 'list' | 'code' | 'quote' | 'empty' | 'html' | 'frontmatter' | 'mdx';
 
 /**
  * AI Provider options
@@ -84,6 +84,7 @@ export interface EnhancementSettings {
     authorStyleSample: string;
     audience: string;
     showConsiderPanel: boolean;
+    fileExtensions: string[];
 }
 
 /**
@@ -136,8 +137,31 @@ export function getSettings(): EnhancementSettings {
         preferredModelFamily: config.get<string>('preferredModelFamily', ''),
         authorStyleSample: config.get<string>('authorStyleSample', ''),
         audience: config.get<string>('audience', ''),
-        showConsiderPanel: config.get<boolean>('showConsiderPanel', true)
+        showConsiderPanel: config.get<boolean>('showConsiderPanel', true),
+        fileExtensions: config.get<string[]>('fileExtensions', ['md', 'mdx'])
     };
+}
+
+/**
+ * Check if a document should be processed based on file extension
+ */
+export function isSupportedDocument(document: vscode.TextDocument): boolean {
+    const settings = getSettings();
+    const fileName = document.fileName.toLowerCase();
+
+    // Check by file extension
+    for (const ext of settings.fileExtensions) {
+        if (fileName.endsWith(`.${ext.toLowerCase()}`)) {
+            return true;
+        }
+    }
+
+    // Also support markdown language ID for files without extension
+    if (document.languageId === 'markdown' || document.languageId === 'mdx') {
+        return true;
+    }
+
+    return false;
 }
 
 /**

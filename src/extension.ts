@@ -8,7 +8,8 @@ import {
     EnhancementStatus,
     EnhancementMode,
     Paragraph,
-    getSettings
+    getSettings,
+    isSupportedDocument
 } from './types';
 
 let outputChannel: vscode.OutputChannel;
@@ -19,14 +20,29 @@ let aiService: AIService;
 // Debounce timer
 let debounceTimer: NodeJS.Timeout | undefined;
 
-// Cache for enhanced paragraphs
-const enhancedCache: Map<string, EnhancedParagraph> = new Map();
+// Cache for enhanced paragraphs - keyed by content hash
+const enhancedCache: Map<string, { enhanced: string; suggestions?: import('./types').Suggestion[] }> = new Map();
 
-// Cache for applied styles (persists across refreshes) - keyed by paragraph content hash
+// Cache for applied styles (persists across refreshes) - keyed by content hash
 const appliedStyleCache: Map<string, EnhancementMode> = new Map();
 
-// Cache for kept paragraphs (user has approved) - keyed by paragraph content hash
+// Cache for kept paragraphs (user has approved) - keyed by content hash
 const keptParagraphsCache: Map<string, boolean> = new Map();
+
+/**
+ * Simple hash function for content-based caching
+ * Uses a fast, non-cryptographic hash that's good enough for cache keys
+ */
+function hashContent(content: string): string {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+        const char = content.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    // Include content length to reduce collisions
+    return `h${hash.toString(16)}_${content.length}`;
+}
 
 // Current paragraphs being tracked
 let currentParagraphs: Paragraph[] = [];
@@ -41,7 +57,7 @@ let currentDocumentUri: vscode.Uri | undefined;
 let currentCancellationSource: vscode.CancellationTokenSource | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
-    outputChannel = vscode.window.createOutputChannel('Markdown AI Enhancer');
+    outputChannel = vscode.window.createOutputChannel('MarkTwo');
     log('Extension activating...');
 
     // Initialize services
@@ -90,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Listen for active editor changes
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor && editor.document.languageId === 'markdown') {
+            if (editor && isSupportedDocument(editor.document)) {
                 onActiveEditorChanged(editor, context);
             }
         })
@@ -99,7 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Listen for document changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event => {
-            if (event.document.languageId === 'markdown') {
+            if (isSupportedDocument(event.document)) {
                 onDocumentChanged(event, context);
             }
         })
@@ -117,16 +133,16 @@ export function activate(context: vscode.ExtensionContext) {
     // Listen for document save - refresh panel on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(document => {
-            if (document.languageId === 'markdown' && EnhancementPanel.currentPanel?.isVisible) {
+            if (isSupportedDocument(document) && EnhancementPanel.currentPanel?.isVisible) {
                 log('Document saved, refreshing enhancement panel...');
                 processDocument(document, context, true);
             }
         })
     );
 
-    // Check if a markdown file is already open
-    if (vscode.window.activeTextEditor?.document.languageId === 'markdown') {
-        log('Markdown file already open');
+    // Check if a supported file is already open
+    if (vscode.window.activeTextEditor && isSupportedDocument(vscode.window.activeTextEditor.document)) {
+        log('Supported markdown file already open');
     }
 
     log('Extension activated');
@@ -157,7 +173,7 @@ async function showEnhancementPanel(context: vscode.ExtensionContext): Promise<v
 
     // Process current document if available
     const editor = vscode.window.activeTextEditor;
-    if (editor && editor.document.languageId === 'markdown') {
+    if (editor && isSupportedDocument(editor.document)) {
         await processDocument(editor.document, context);
     }
 }
@@ -176,8 +192,8 @@ function hideEnhancementPanel(): void {
  */
 async function refreshEnhancement(context: vscode.ExtensionContext): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== 'markdown') {
-        vscode.window.showWarningMessage('Please open a markdown file first.');
+    if (!editor || !isSupportedDocument(editor.document)) {
+        vscode.window.showWarningMessage('Please open a markdown or MDX file first.');
         return;
     }
 
@@ -246,7 +262,7 @@ function onConfigurationChanged(context: vscode.ExtensionContext): void {
     // Refresh if panel is visible
     if (EnhancementPanel.currentPanel?.isVisible) {
         const editor = vscode.window.activeTextEditor;
-        if (editor && editor.document.languageId === 'markdown') {
+        if (editor && isSupportedDocument(editor.document)) {
             processDocument(editor.document, context);
         }
     }
@@ -291,23 +307,12 @@ async function processDocument(
 
         // Build enhanced paragraphs list
         const enhancedParagraphs: EnhancedParagraph[] = newParagraphs.map((para, index) => {
-            // Check cache first
-            const cacheKey = `${para.startLine}:${para.content}`;
+            // Use content hash for stable caching (independent of line position)
+            const contentHash = hashContent(para.content.trim());
 
-            // Check for persisted style and kept status (use content as key for stability)
-            const styleKey = para.content.trim();
-            const persistedStyle = appliedStyleCache.get(styleKey);
-            const isKept = keptParagraphsCache.get(styleKey) || false;
-
-            if (!forceRefresh && enhancedCache.has(cacheKey)) {
-                const cached = enhancedCache.get(cacheKey)!;
-                // Restore persisted style and kept status
-                if (persistedStyle) {
-                    cached.appliedStyle = persistedStyle;
-                }
-                cached.kept = isKept;
-                return cached;
-            }
+            // Check for persisted style and kept status
+            const persistedStyle = appliedStyleCache.get(contentHash);
+            const isKept = keptParagraphsCache.get(contentHash) || false;
 
             // If paragraph is kept, don't re-process it
             if (isKept) {
@@ -320,11 +325,25 @@ async function processDocument(
                 };
             }
 
+            // Check cache for previously enhanced content (unless force refresh)
+            if (!forceRefresh && enhancedCache.has(contentHash)) {
+                const cached = enhancedCache.get(contentHash)!;
+                log(`Cache hit for paragraph: "${para.content.substring(0, 30)}..."`);
+                return {
+                    original: para,
+                    enhanced: cached.enhanced,
+                    status: EnhancementStatus.Complete,
+                    appliedStyle: persistedStyle,
+                    suggestions: cached.suggestions
+                };
+            }
+
             // Check if this paragraph needs processing
             const needsProcessing =
                 forceRefresh ||
                 changes.added.includes(para) ||
-                changes.modified.some(m => m.startLine === para.startLine);
+                changes.modified.some(m => m.startLine === para.startLine) ||
+                !enhancedCache.has(contentHash); // Also process if never enhanced
 
             if (needsProcessing) {
                 return {
@@ -385,7 +404,7 @@ async function processDocument(
 
                 // Skip enhancement for code blocks and ignored paragraphs
                 // (headings are now enhanced for spelling/grammar)
-                if (enhanced.original.type === 'code' || enhanced.original.ignore || enhanced.original.noEnhance) {
+                if (enhanced.original.type === 'code' || enhanced.original.type === 'mdx' || enhanced.original.ignore || enhanced.original.noEnhance) {
                     enhanced.status = EnhancementStatus.Complete;
                     continue;
                 }
@@ -418,13 +437,17 @@ async function processDocument(
                     enhanced.suggestions = response.suggestions;
                 }
 
-                // Cache the result
-                const cacheKey = `${enhanced.original.startLine}:${enhanced.original.content}`;
-                enhancedCache.set(cacheKey, enhanced);
+                // Cache the result using content hash (stable across line changes)
+                const contentHash = hashContent(enhanced.original.content.trim());
+                enhancedCache.set(contentHash, {
+                    enhanced: response.enhanced,
+                    suggestions: response.suggestions
+                });
 
-                // Persist the applied style (keyed by content for stability)
-                const styleKey = enhanced.original.content.trim();
-                appliedStyleCache.set(styleKey, effectiveMode);
+                // Persist the applied style
+                appliedStyleCache.set(contentHash, effectiveMode);
+
+                log(`Cached enhancement for: "${enhanced.original.content.substring(0, 30)}..." (hash: ${contentHash})`);
 
             } catch (error) {
                 enhanced.status = EnhancementStatus.Error;
@@ -495,17 +518,22 @@ async function keepParagraph(paragraphId: string): Promise<void> {
     }
 
     try {
-        // Build the replacement text: add <!-- no-enhance --> before each paragraph
+        // Build the replacement text: add no-enhance comment before each paragraph
         const enhancedText = para.enhanced || para.original.content;
+
+        // Determine comment style based on file extension (MDX uses JSX comments)
+        const fileName = editor.document.fileName.toLowerCase();
+        const isMdxFile = fileName.endsWith('.mdx');
+        const noEnhanceComment = isMdxFile ? '{/* no-enhance */}' : '<!-- no-enhance -->';
 
         // Split by double newlines to find paragraph boundaries
         const paragraphs = enhancedText.split(/\n\n+/);
 
-        // Add <!-- no-enhance --> before each paragraph (comment acts as separator, no blank line needed)
+        // Add no-enhance comment before each paragraph (comment acts as separator, no blank line needed)
         const replacementText = paragraphs
             .map(p => p.trim())
             .filter(p => p.length > 0)
-            .map(p => `<!-- no-enhance -->\n${p}`)
+            .map(p => `${noEnhanceComment}\n${p}`)
             .join('\n');
 
         // Calculate the range to replace in the source document
@@ -525,9 +553,9 @@ async function keepParagraph(paragraphId: string): Promise<void> {
         para.kept = true;
         para.suggestions = [];
 
-        // Persist to cache
-        const styleKey = para.original.content.trim();
-        keptParagraphsCache.set(styleKey, true);
+        // Persist to cache using content hash
+        const contentHash = hashContent(para.original.content.trim());
+        keptParagraphsCache.set(contentHash, true);
 
         // Update panel
         if (EnhancementPanel.currentPanel) {
@@ -738,13 +766,15 @@ async function reenhanceParagraph(
         enhanced.status = EnhancementStatus.Complete;
         enhanced.appliedStyle = mode;
 
-        // Update cache
-        const cacheKey = `${enhanced.original.startLine}:${enhanced.original.content}`;
-        enhancedCache.set(cacheKey, enhanced);
+        // Update cache using content hash
+        const contentHash = hashContent(enhanced.original.content.trim());
+        enhancedCache.set(contentHash, {
+            enhanced: response.enhanced,
+            suggestions: response.suggestions
+        });
 
-        // Persist the applied style (keyed by content for stability)
-        const styleKey = enhanced.original.content.trim();
-        appliedStyleCache.set(styleKey, mode);
+        // Persist the applied style
+        appliedStyleCache.set(contentHash, mode);
 
         panel.update(currentEnhancedParagraphs);
         panel.showStatus('Re-enhancement complete');

@@ -270,6 +270,112 @@ OUTPUT ONLY THE CORRECTED HEADING, NO EXPLANATION.`;
     }
 
     /**
+     * Build a combined prompt for headings - spelling/grammar fixes plus suggestions for improvement
+     */
+    private buildHeadingCombinedPrompt(request: EnhancementRequest): string {
+        const audienceGuidance = this.getAudienceGuidance(request.audience);
+
+        return `You are an AI editor. Your task is to review a heading and make minimal corrections, plus suggest improvements.
+${audienceGuidance}
+HEADING TO REVIEW:
+${request.paragraph}
+
+ENHANCEMENT RULES:
+1. Fix any spelling mistakes
+2. Fix any grammar issues
+3. You may slightly improve clarity or word choice IF it fits the target audience
+4. Keep the heading concise - do NOT expand it into a longer phrase or add content
+5. Preserve the original markdown heading syntax (# ## ### etc.)
+6. Do NOT change the meaning or intent
+7. If no corrections are needed, return the heading exactly as-is
+
+RESPOND WITH A JSON OBJECT:
+{
+  "enhanced": "The corrected heading here",
+  "suggestions": [
+    {
+      "category": "idea",
+      "title": "Short title",
+      "description": "Why this might be better",
+      "examples": ["Alternative heading 1", "Alternative heading 2"]
+    }
+  ]
+}
+
+SUGGESTION RULES FOR HEADINGS:
+1. 0-1 suggestions maximum
+2. Focus on making the heading more engaging, catchy, or compelling
+3. Consider: clarity, intrigue, action words, emotional hooks
+4. Each suggestion MUST include 1-2 alternative heading examples
+5. Skip suggestions if the heading is already strong
+6. Keep all suggested alternatives concise (they're headings, not paragraphs)
+
+OUTPUT ONLY THE JSON OBJECT, NO MARKDOWN FENCES OR EXPLANATION.`;
+    }
+
+    /**
+     * Build a prompt for HTML-only content focusing on accessibility
+     */
+    private buildHtmlAccessibilityPrompt(request: EnhancementRequest): string {
+        return `You are an HTML accessibility expert. Your task is to review HTML content and improve its accessibility.
+
+HTML TO REVIEW:
+${request.paragraph}
+
+ACCESSIBILITY IMPROVEMENTS TO MAKE:
+1. Images (<img>):
+   - Ensure alt text is descriptive and meaningful (not just "image" or filename)
+   - If the image is decorative, suggest alt=""
+   - Suggest adding loading="lazy" for performance if appropriate
+
+2. Links (<a>):
+   - Ensure link text is descriptive (not "click here")
+   - Add aria-label if link text is unclear
+   - Check for missing href attributes
+
+3. Interactive elements:
+   - Ensure proper ARIA attributes are present
+   - Check for keyboard accessibility concerns
+   - Add role attributes where appropriate
+
+4. Semantic structure:
+   - Suggest semantic elements over generic divs/spans where appropriate
+   - Check for proper heading hierarchy if headers are present
+
+5. General:
+   - Add lang attribute if text is in a different language
+   - Ensure proper contrast concerns are noted
+
+RULES:
+1. Return improved HTML that maintains the original structure and styling
+2. Only modify attributes - do NOT remove elements or change layout
+3. Keep all existing inline styles and classes
+4. If the HTML is already accessible, return it unchanged
+5. Focus on meaningful improvements, not pedantic changes
+
+RESPOND WITH A JSON OBJECT:
+{
+  "enhanced": "The improved HTML with accessibility attributes",
+  "suggestions": [
+    {
+      "category": "improvement",
+      "title": "Brief title of the accessibility issue",
+      "description": "What was improved or should be considered",
+      "examples": []
+    }
+  ]
+}
+
+SUGGESTION RULES:
+1. Only include suggestions if there were meaningful accessibility issues to fix
+2. 0-2 suggestions maximum
+3. Focus on the most important accessibility concerns
+4. If the HTML was already accessible, return empty suggestions array
+
+OUTPUT ONLY THE JSON OBJECT, NO MARKDOWN FENCES OR EXPLANATION.`;
+    }
+
+    /**
      * Build a special prompt for list-expand mode
      */
     private buildListExpandPrompt(request: EnhancementRequest): string {
@@ -332,6 +438,16 @@ OUTPUT ONLY THE PROSE PARAGRAPHS, NO PREAMBLE OR EXPLANATION.`;
      * Build a combined prompt that returns both enhanced text and suggestions
      */
     private buildCombinedPrompt(request: EnhancementRequest): string {
+        // Special handling for headings - only correct spelling/grammar, no suggestions
+        if (request.paragraphType === 'heading') {
+            return this.buildHeadingCombinedPrompt(request);
+        }
+
+        // Special handling for HTML-only content - focus on accessibility
+        if (request.paragraphType === 'html') {
+            return this.buildHtmlAccessibilityPrompt(request);
+        }
+
         const modeDescription = MODE_DESCRIPTIONS[request.mode];
         const audienceGuidance = this.getAudienceGuidance(request.audience);
 

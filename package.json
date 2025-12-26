@@ -1,7 +1,7 @@
 {
-    "name": "markdown-ai-enhancer",
-    "displayName": "Markdown AI Enhancer",
-    "description": "AI-powered markdown enhancement with side-by-side editing",
+    "name": "marktwo",
+    "displayName": "MarkTwo",
+    "description": "Writing assistant for VS Code",
     "version": "0.0.1",
     "publisher": "your-publisher-name",
     "engines": {
@@ -11,26 +11,27 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:markdown"
+        "onLanguage:markdown",
+        "onLanguage:mdx"
     ],
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
             {
                 "command": "markdown-ai-enhancer.showPanel",
-                "title": "Markdown AI: Show Enhancement Panel"
+                "title": "MarkTwo: Show Enhancement Panel"
             },
             {
                 "command": "markdown-ai-enhancer.refreshPanel",
-                "title": "Markdown AI: Refresh Enhancement"
+                "title": "MarkTwo: Refresh Enhancement"
             },
             {
                 "command": "markdown-ai-enhancer.hidePanel",
-                "title": "Markdown AI: Hide Enhancement Panel"
+                "title": "MarkTwo: Hide Enhancement Panel"
             }
         ],
         "configuration": {
-            "title": "Markdown AI Enhancer",
+            "title": "MarkTwo",
             "properties": {
                 "markdown-ai-enhancer.enhancementMode": {
                     "type": "string",
@@ -97,6 +98,14 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show a 'Consider' panel with suggestions for improvements, gaps, and ideas to elevate your content"
+                },
+                "markdown-ai-enhancer.fileExtensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ["md", "mdx"],
+                    "description": "File extensions to process (without the dot). Default: md, mdx"
                 }
             }
         }

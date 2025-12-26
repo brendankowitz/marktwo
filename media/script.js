@@ -90,9 +90,12 @@
             const isIgnored = para.original?.ignore; // <!-- ai-ignore -->
             const isNoEnhance = para.original?.noEnhance; // <!-- no-enhance --> (user kept)
             const isCode = para.original?.type === 'code';
+            const isMdx = para.original?.type === 'mdx'; // MDX imports/exports/components
+            const isFrontmatter = para.original?.type === 'frontmatter';
             const isKept = para.kept || isNoEnhance || false;
-            const canEnhance = !isIgnored && !isNoEnhance && !isCode;
-            const statusClass = isKept ? 'kept' : (isIgnored ? 'ignored' : (para.status || 'pending'));
+            const canEnhance = !isIgnored && !isNoEnhance && !isCode && !isMdx && !isFrontmatter;
+            const isAutoIgnored = isIgnored || isCode || isMdx || isFrontmatter;
+            const statusClass = isKept ? 'kept' : (isAutoIgnored ? 'ignored' : (para.status || 'pending'));
             const typeLabel = getTypeLabel(para.original?.type || 'text');
             const statusIndicator = getStatusIndicator(para.status, para);
             const content = escapeHtml(para.enhanced || para.original?.content || '');
@@ -355,7 +358,10 @@
             'list': 'List',
             'code': 'Code',
             'quote': 'Quote',
-            'empty': 'Empty'
+            'empty': 'Empty',
+            'html': 'HTML',
+            'frontmatter': 'Metadata',
+            'mdx': 'MDX'
         };
         return labels[type] || type;
     }
@@ -371,8 +377,9 @@
             return '<span class="kept-indicator">✓ Kept</span>';
         }
 
-        // Check if paragraph is ignored (<!-- ai-ignore -->)
-        if (para?.original?.ignore) {
+        // Check if paragraph is ignored (<!-- ai-ignore -->, code, mdx, frontmatter)
+        const type = para?.original?.type;
+        if (para?.original?.ignore || type === 'code' || type === 'mdx' || type === 'frontmatter') {
             return '<span class="ignored">⊘ Ignored</span>';
         }
 
@@ -442,15 +449,58 @@
         // Blockquotes
         html = html.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
 
-        // Unordered lists
-        html = html.replace(/^\s*[-*+] (.*$)/gm, '<li>$1</li>');
-        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        // Process lists line by line
+        const lines = html.split('\n');
+        const processedLines = [];
+        let inUl = false;
+        let inOl = false;
 
-        // Ordered lists
-        html = html.replace(/^\s*\d+\. (.*$)/gm, '<li>$1</li>');
+        for (const line of lines) {
+            const ulMatch = line.match(/^\s*[-*+] (.*)$/);
+            const olMatch = line.match(/^\s*\d+\. (.*)$/);
 
-        // Line breaks
+            if (ulMatch) {
+                if (!inUl) {
+                    if (inOl) {
+                        processedLines.push('</ol>');
+                        inOl = false;
+                    }
+                    processedLines.push('<ul>');
+                    inUl = true;
+                }
+                processedLines.push('<li>' + ulMatch[1] + '</li>');
+            } else if (olMatch) {
+                if (!inOl) {
+                    if (inUl) {
+                        processedLines.push('</ul>');
+                        inUl = false;
+                    }
+                    processedLines.push('<ol>');
+                    inOl = true;
+                }
+                processedLines.push('<li>' + olMatch[1] + '</li>');
+            } else {
+                if (inUl) {
+                    processedLines.push('</ul>');
+                    inUl = false;
+                }
+                if (inOl) {
+                    processedLines.push('</ol>');
+                    inOl = false;
+                }
+                processedLines.push(line);
+            }
+        }
+        // Close any open lists
+        if (inUl) processedLines.push('</ul>');
+        if (inOl) processedLines.push('</ol>');
+
+        html = processedLines.join('\n');
+
+        // Line breaks - but not inside lists or after block elements
         html = html.replace(/\n\n/g, '</p><p>');
+        html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>|<\/pre>|<\/h[1-6]>|<\/li>|<ul>|<ol>)\n/g, '$1');
+        html = html.replace(/\n(<\/ul>|<\/ol>|<li>)/g, '$1');
         html = html.replace(/\n/g, '<br>');
 
         // Wrap in paragraph if not already wrapped

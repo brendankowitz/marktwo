@@ -46,7 +46,7 @@ export class EnhancementPanel {
         // Create a new panel
         const panel = vscode.window.createWebviewPanel(
             EnhancementPanel.viewType,
-            'AI Enhanced Preview',
+            'MarkTwo Preview',
             column,
             {
                 enableScripts: true,
@@ -163,12 +163,12 @@ export class EnhancementPanel {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <link href="${styleUri}" rel="stylesheet">
-    <title>AI Enhanced Preview</title>
+    <title>MarkTwo Preview</title>
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>AI Enhanced Preview</h1>
+            <h1>MarkTwo Preview</h1>
             <div class="controls">
                 <button id="copyBtn" class="btn" title="Copy all enhanced text">
                     <span class="icon">&#x2398;</span> Copy All
