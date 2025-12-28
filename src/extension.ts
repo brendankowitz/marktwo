@@ -67,37 +67,37 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register commands
     const showPanelCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.showPanel',
+        'marktwo.showPanel',
         () => showEnhancementPanel(context)
     );
 
     const hidePanelCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.hidePanel',
+        'marktwo.hidePanel',
         () => hideEnhancementPanel()
     );
 
     const refreshPanelCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.refreshPanel',
+        'marktwo.refreshPanel',
         () => refreshEnhancement(context)
     );
 
     const reenhanceParagraphCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.reenhanceParagraph',
+        'marktwo.reenhanceParagraph',
         (paragraphId: string, mode: string) => reenhanceParagraph(paragraphId, mode as EnhancementMode, context)
     );
 
     const keepParagraphCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.keepParagraph',
+        'marktwo.keepParagraph',
         (paragraphId: string) => keepParagraph(paragraphId)
     );
 
     const applySuggestionCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.applySuggestion',
+        'marktwo.applySuggestion',
         (paragraphId: string, suggestionIndex: number, exampleIndex: number) => applySuggestion(paragraphId, suggestionIndex, exampleIndex)
     );
 
     const improveSelectionCommand = vscode.commands.registerCommand(
-        'markdown-ai-enhancer.improveSelection',
+        'marktwo.improveSelection',
         (paragraphId: string, selectedText: string, instruction: string) => improveSelection(paragraphId, selectedText, instruction)
     );
 

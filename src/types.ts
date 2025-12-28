@@ -127,7 +127,7 @@ export type WebViewMessage =
  * Helper function to get settings from VSCode configuration
  */
 export function getSettings(): EnhancementSettings {
-    const config = vscode.workspace.getConfiguration('markdown-ai-enhancer');
+    const config = vscode.workspace.getConfiguration('marktwo');
 
     return {
         enhancementMode: config.get<string>('enhancementMode', 'expand') as EnhancementMode,

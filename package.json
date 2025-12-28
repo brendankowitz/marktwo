@@ -3,7 +3,7 @@
     "displayName": "MarkTwo",
     "description": "Writing assistant for VS Code",
     "version": "0.0.1",
-    "publisher": "your-publisher-name",
+    "publisher": "brendankowitz",
     "engines": {
         "vscode": "^1.90.0"
     },
@@ -18,22 +18,22 @@
     "contributes": {
         "commands": [
             {
-                "command": "markdown-ai-enhancer.showPanel",
+                "command": "marktwo.showPanel",
                 "title": "MarkTwo: Show Enhancement Panel"
             },
             {
-                "command": "markdown-ai-enhancer.refreshPanel",
+                "command": "marktwo.refreshPanel",
                 "title": "MarkTwo: Refresh Enhancement"
             },
             {
-                "command": "markdown-ai-enhancer.hidePanel",
+                "command": "marktwo.hidePanel",
                 "title": "MarkTwo: Hide Enhancement Panel"
             }
         ],
         "configuration": {
             "title": "MarkTwo",
             "properties": {
-                "markdown-ai-enhancer.enhancementMode": {
+                "marktwo.enhancementMode": {
                     "type": "string",
                     "enum": ["expand", "clarify", "professional", "casual", "technical", "list-expand"],
                     "default": "expand",
@@ -48,38 +48,38 @@
                     "description": "How to enhance the content",
                     "markdownDescription": "How to enhance the content. You can override this per-paragraph using `<!-- ai-style: expand -->` (or clarify, professional, casual, technical, list-expand)"
                 },
-                "markdown-ai-enhancer.contextWindowSize": {
+                "marktwo.contextWindowSize": {
                     "type": "number",
                     "default": 2,
                     "minimum": 0,
                     "maximum": 5,
                     "description": "Number of previous paragraphs to include as context"
                 },
-                "markdown-ai-enhancer.debounceDelay": {
+                "marktwo.debounceDelay": {
                     "type": "number",
                     "default": 20000,
                     "minimum": 5000,
                     "maximum": 60000,
                     "description": "Milliseconds to wait after user stops typing before enhancing (default: 20 seconds)"
                 },
-                "markdown-ai-enhancer.autoEnhance": {
+                "marktwo.autoEnhance": {
                     "type": "boolean",
                     "default": true,
                     "description": "Automatically enhance as you type",
                     "markdownDescription": "Automatically enhance as you type. Use `<!-- ai-ignore -->` before any paragraph to skip enhancement for that paragraph"
                 },
-                "markdown-ai-enhancer.preferredModelFamily": {
+                "marktwo.preferredModelFamily": {
                     "type": "string",
                     "default": "",
                     "description": "Preferred model family (just the family name, not the full path). Examples: gpt-5, claude-sonnet-4.5, gemini-3-pro. Leave empty to use any available model. Check Output > 'Markdown AI Enhancer' to see available models in format vendor/family/name."
                 },
-                "markdown-ai-enhancer.authorStyleSample": {
+                "marktwo.authorStyleSample": {
                     "type": "string",
                     "default": "",
                     "editPresentation": "multilineText",
                     "description": "Paste a sample of your writing (1-3 paragraphs) to help the AI understand and preserve your unique voice and style"
                 },
-                "markdown-ai-enhancer.audience": {
+                "marktwo.audience": {
                     "type": "string",
                     "enum": ["", "blog-post", "email", "office-note", "technical-doc", "academic", "social-media"],
                     "default": "",
@@ -94,12 +94,12 @@
                     ],
                     "description": "Target audience/format to tailor the writing style"
                 },
-                "markdown-ai-enhancer.showConsiderPanel": {
+                "marktwo.showConsiderPanel": {
                     "type": "boolean",
                     "default": true,
                     "description": "Show a 'Consider' panel with suggestions for improvements, gaps, and ideas to elevate your content"
                 },
-                "markdown-ai-enhancer.fileExtensions": {
+                "marktwo.fileExtensions": {
                     "type": "array",
                     "items": {
                         "type": "string"

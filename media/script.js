@@ -508,7 +508,83 @@
             html = '<p>' + html + '</p>';
         }
 
-        return html;
+        return sanitizeHtml(html);
+    }
+
+    /**
+     * Sanitize HTML using allowlist of safe tags and attributes
+     * @param {string} html
+     */
+    function sanitizeHtml(html) {
+        // Allowed tags for markdown rendering
+        const allowedTags = new Set([
+            'p', 'br', 'strong', 'em', 'code', 'pre', 'blockquote',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li', 'a', 'span'
+        ]);
+
+        // Allowed attributes per tag
+        const allowedAttrs = {
+            'a': ['href', 'title'],
+            'code': ['class'],
+            'pre': ['class'],
+            'span': ['class']
+        };
+
+        // Create a temporary element to parse the HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // Recursively sanitize nodes
+        function sanitizeNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                return; // Text nodes are safe
+            }
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toLowerCase();
+
+                // Remove disallowed tags but keep their content
+                if (!allowedTags.has(tagName)) {
+                    const parent = node.parentNode;
+                    while (node.firstChild) {
+                        parent.insertBefore(node.firstChild, node);
+                    }
+                    parent.removeChild(node);
+                    return;
+                }
+
+                // Remove disallowed attributes
+                const allowed = allowedAttrs[tagName] || [];
+                const attrs = Array.from(node.attributes);
+                for (const attr of attrs) {
+                    if (!allowed.includes(attr.name)) {
+                        node.removeAttribute(attr.name);
+                    }
+                    // Extra safety: sanitize href to prevent javascript: URLs
+                    if (attr.name === 'href') {
+                        const href = attr.value.trim().toLowerCase();
+                        if (href.startsWith('javascript:') || href.startsWith('data:')) {
+                            node.removeAttribute('href');
+                        }
+                    }
+                }
+
+                // Recursively sanitize children
+                const children = Array.from(node.childNodes);
+                for (const child of children) {
+                    sanitizeNode(child);
+                }
+            }
+        }
+
+        // Sanitize all nodes
+        const children = Array.from(temp.childNodes);
+        for (const child of children) {
+            sanitizeNode(child);
+        }
+
+        return temp.innerHTML;
     }
 
     /**

@@ -97,13 +97,13 @@ export class EnhancementPanel {
         switch (message.type) {
             case 'refresh':
                 // Trigger refresh - emit event for extension to handle
-                vscode.commands.executeCommand('markdown-ai-enhancer.refreshPanel');
+                vscode.commands.executeCommand('marktwo.refreshPanel');
                 break;
             case 'reenhance':
                 // Re-enhance a specific paragraph with a new mode
                 if (message.paragraphId && message.mode) {
                     vscode.commands.executeCommand(
-                        'markdown-ai-enhancer.reenhanceParagraph',
+                        'marktwo.reenhanceParagraph',
                         message.paragraphId,
                         message.mode
                     );
@@ -113,7 +113,7 @@ export class EnhancementPanel {
                 // Mark paragraph as kept (user approved)
                 if (message.paragraphId) {
                     vscode.commands.executeCommand(
-                        'markdown-ai-enhancer.keepParagraph',
+                        'marktwo.keepParagraph',
                         message.paragraphId
                     );
                 }
@@ -122,7 +122,7 @@ export class EnhancementPanel {
                 // Apply a suggestion example to the enhanced text
                 if (message.paragraphId !== undefined && message.suggestionIndex !== undefined && message.exampleIndex !== undefined) {
                     vscode.commands.executeCommand(
-                        'markdown-ai-enhancer.applySuggestion',
+                        'marktwo.applySuggestion',
                         message.paragraphId,
                         message.suggestionIndex,
                         message.exampleIndex
@@ -133,7 +133,7 @@ export class EnhancementPanel {
                 // Improve a selected portion of text based on user instruction
                 if (message.paragraphId && message.selectedText && message.instruction) {
                     vscode.commands.executeCommand(
-                        'markdown-ai-enhancer.improveSelection',
+                        'marktwo.improveSelection',
                         message.paragraphId,
                         message.selectedText,
                         message.instruction
