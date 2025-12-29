@@ -1,0 +1,124 @@
+{
+    "name": "marktwo",
+    "displayName": "MarkTwo",
+    "description": "Writing assistant for VS Code",
+    "version": "0.0.1",
+    "publisher": "brendankowitz",
+    "engines": {
+        "vscode": "^1.90.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onLanguage:markdown",
+        "onLanguage:mdx"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "marktwo.showPanel",
+                "title": "MarkTwo: Show Enhancement Panel"
+            },
+            {
+                "command": "marktwo.refreshPanel",
+                "title": "MarkTwo: Refresh Enhancement"
+            },
+            {
+                "command": "marktwo.hidePanel",
+                "title": "MarkTwo: Hide Enhancement Panel"
+            }
+        ],
+        "configuration": {
+            "title": "MarkTwo",
+            "properties": {
+                "marktwo.enhancementMode": {
+                    "type": "string",
+                    "enum": ["expand", "clarify", "professional", "casual", "technical", "list-expand"],
+                    "default": "expand",
+                    "enumDescriptions": [
+                        "Add detail and examples",
+                        "Improve readability and structure",
+                        "Make more formal",
+                        "Make more conversational",
+                        "Add technical depth",
+                        "Convert bullet points to flowing paragraphs (no invented content)"
+                    ],
+                    "description": "How to enhance the content",
+                    "markdownDescription": "How to enhance the content. You can override this per-paragraph using `<!-- ai-style: expand -->` (or clarify, professional, casual, technical, list-expand)"
+                },
+                "marktwo.contextWindowSize": {
+                    "type": "number",
+                    "default": 2,
+                    "minimum": 0,
+                    "maximum": 5,
+                    "description": "Number of previous paragraphs to include as context"
+                },
+                "marktwo.debounceDelay": {
+                    "type": "number",
+                    "default": 20000,
+                    "minimum": 5000,
+                    "maximum": 60000,
+                    "description": "Milliseconds to wait after user stops typing before enhancing (default: 20 seconds)"
+                },
+                "marktwo.autoEnhance": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically enhance as you type",
+                    "markdownDescription": "Automatically enhance as you type. Use `<!-- ai-ignore -->` before any paragraph to skip enhancement for that paragraph"
+                },
+                "marktwo.preferredModelFamily": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Preferred model family (just the family name, not the full path). Examples: gpt-5, claude-sonnet-4.5, gemini-3-pro. Leave empty to use any available model. Check Output > 'Markdown AI Enhancer' to see available models in format vendor/family/name."
+                },
+                "marktwo.authorStyleSample": {
+                    "type": "string",
+                    "default": "",
+                    "editPresentation": "multilineText",
+                    "description": "Paste a sample of your writing (1-3 paragraphs) to help the AI understand and preserve your unique voice and style"
+                },
+                "marktwo.audience": {
+                    "type": "string",
+                    "enum": ["", "blog-post", "email", "office-note", "technical-doc", "academic", "social-media"],
+                    "default": "",
+                    "enumDescriptions": [
+                        "No specific audience (general)",
+                        "Blog post - engaging, conversational, web-friendly",
+                        "Email - clear, concise, action-oriented",
+                        "Office note/memo - professional, brief, to-the-point",
+                        "Technical documentation - precise, structured, reference-style",
+                        "Academic - formal, well-sourced, scholarly tone",
+                        "Social media - punchy, engaging, shareable"
+                    ],
+                    "description": "Target audience/format to tailor the writing style"
+                },
+                "marktwo.showConsiderPanel": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show a 'Consider' panel with suggestions for improvements, gaps, and ideas to elevate your content"
+                },
+                "marktwo.fileExtensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": ["md", "mdx"],
+                    "description": "File extensions to process (without the dot). Default: md, mdx"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "lint": "eslint src --ext ts"
+    },
+    "devDependencies": {
+        "@types/node": "^20.x",
+        "@types/vscode": "^1.90.0",
+        "typescript": "^5.3.0"
+    }
+}
