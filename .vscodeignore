@@ -1,0 +1,26 @@
+# Source files (compiled output is in out/)
+src/**
+tsconfig.json
+
+# Development files
+.vscode/**
+.github/**
+.git/**
+.gitignore
+
+# Documentation (README is included automatically)
+docs/**
+CLAUDE.md
+
+# Dependencies and build artifacts
+node_modules/**
+*.vsix
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+*.map
+.env
+.env.*
+coverage/**

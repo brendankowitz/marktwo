@@ -1,14 +1,42 @@
 {
     "name": "marktwo",
     "displayName": "MarkTwo",
-    "description": "Writing assistant for VS Code",
+    "description": "AI-powered writing assistant that keeps you in control. Enhance markdown and MDX with side-by-side editing.",
     "version": "0.0.1",
     "publisher": "brendankowitz",
+    "author": {
+        "name": "Brendan Kowitz",
+        "url": "https://kowitz.net"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/brendankowitz/marktwo.git"
+    },
+    "bugs": {
+        "url": "https://github.com/brendankowitz/marktwo/issues"
+    },
+    "homepage": "https://kowitz.net/blog/marktwo-writing-assistant/",
+    "icon": "media/icon.png",
+    "galleryBanner": {
+        "color": "#1e1e1e",
+        "theme": "dark"
+    },
+    "keywords": [
+        "markdown",
+        "mdx",
+        "ai",
+        "writing",
+        "copilot",
+        "enhancement",
+        "editor"
+    ],
     "engines": {
         "vscode": "^1.90.0"
     },
     "categories": [
-        "Other"
+        "Other",
+        "Machine Learning"
     ],
     "activationEvents": [
         "onLanguage:markdown",
@@ -114,11 +142,14 @@
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "lint": "eslint src --ext ts"
+        "lint": "eslint src --ext ts",
+        "package": "vsce package",
+        "publish": "vsce publish"
     },
     "devDependencies": {
         "@types/node": "^20.x",
         "@types/vscode": "^1.90.0",
+        "@vscode/vsce": "^3.2.1",
         "typescript": "^5.3.0"
     }
 }
